@@ -2,7 +2,7 @@ Advanced Android
 ================
 
 This repository contains samples and solutions for the
-Advanced Android course.
+[Advanced Android course](https://developer.android.com/courses/advanced-training/overview).
 
 Introduction
 ------------
