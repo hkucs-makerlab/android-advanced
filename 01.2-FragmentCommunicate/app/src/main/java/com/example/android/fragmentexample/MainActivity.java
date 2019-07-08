@@ -22,18 +22,24 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 /**
- * https://codelabs.developers.google.com/codelabs/advanced-android-training-fragments/#4
- * demon how to use dynamic fragment
- *  - use FragmentManager, calling getSupportFragmentManager()
- *  - save 'isFragmentDisplayed' to instant state bundle
+ * https://codelabs.developers.google.com/codelabs/advanced-android-training-fragment-communication/#2
+ * demo - fragment communication
+ *      MainActivity implements callback interface of the SimpleFragment to update the mRadioButtonChoice,
+ *      mRadioButtonChoice is passed back to new instance of SimpleFragment
+ *
  */
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements
+        View.OnClickListener,
+        SimpleFragment.OnFragmentInteractionListener  {
     static final String STATE_FRAGMENT = "state_of_fragment";
     private Button mButton;
     private boolean isFragmentDisplayed = false;
+    private int mRadioButtonChoice = 2; // The default (no choice).
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void displayFragment() {
-        SimpleFragment simpleFragment = SimpleFragment.newInstance();
+        SimpleFragment simpleFragment = SimpleFragment.newInstance(mRadioButtonChoice);
         // Get the FragmentManager and start a transaction.
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -98,7 +104,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     protected void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean(STATE_FRAGMENT, isFragmentDisplayed);
         super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putBoolean(STATE_FRAGMENT, isFragmentDisplayed);
+    }
+
+    @Override
+    public void onRadioButtonChoice(int choice) {
+        // Keep the radio button choice to pass it back to the fragment.
+        mRadioButtonChoice = choice;
+        Toast.makeText(this, "Choice is " + Integer.toString(choice),
+                Toast.LENGTH_SHORT).show();
     }
 }
