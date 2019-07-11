@@ -24,6 +24,9 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Display;
+import android.view.Surface;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -58,6 +61,8 @@ public class MainActivity extends AppCompatActivity
     private ImageView mSpotBottom;
     private ImageView mSpotLeft;
     private ImageView mSpotRight;
+    //
+    private Display mDisplay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +70,10 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         // Lock the orientation to portrait (for now)
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        //
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        mDisplay = wm.getDefaultDisplay();
 
         mTextSensorAzimuth = (TextView) findViewById(R.id.value_azimuth);
         mTextSensorPitch = (TextView) findViewById(R.id.value_pitch);
@@ -132,15 +140,44 @@ public class MainActivity extends AppCompatActivity
                 return;
         }
         float[] rotationMatrix = new float[9];
+        // remap sensor coordinate to earth coordinate
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
                 null, mAccelerometerData, mMagnetometerData);
-        if (rotationOK) {
-            float orientationValues[] = new float[3];
 
-            SensorManager.getOrientation(rotationMatrix, orientationValues);
-//            float azimuth = orientationValues[0] *180 / (float)Math.PI;
-//            float pitch = orientationValues[1] * 180 / (float)Math.PI;
-//            float roll = orientationValues[2] * 180 / (float)Math.PI;
+        // since sensor coordinate system remains the same when physcially rotate,
+        //  needed to adjust and remap earth coordinate respect
+        //  to rotated sensor coordinate
+        float[] rotationMatrixAdjusted = new float[9];
+        switch (mDisplay.getRotation()) {
+            case Surface.ROTATION_0:
+                rotationMatrixAdjusted = rotationMatrix.clone();
+                break;
+            case Surface.ROTATION_90:
+                SensorManager.remapCoordinateSystem(rotationMatrix,
+                        SensorManager.AXIS_Y,
+                        SensorManager.AXIS_MINUS_X,
+                        rotationMatrixAdjusted);
+                break;
+            case Surface.ROTATION_180:
+                SensorManager.remapCoordinateSystem(rotationMatrix,
+                        SensorManager.AXIS_MINUS_X,
+                        SensorManager.AXIS_MINUS_Y,
+                        rotationMatrixAdjusted);
+                break;
+            case Surface.ROTATION_270:
+                SensorManager.remapCoordinateSystem(rotationMatrix,
+                        SensorManager.AXIS_MINUS_Y,
+                        SensorManager.AXIS_X,
+                        rotationMatrixAdjusted);
+                break;
+        }
+
+        if (rotationOK) {
+            // angles in radian
+            float orientationValues[] = new float[3];
+            // calculate the angles based on magnitude sensor data in rotationMatrixAdjusted
+            SensorManager.getOrientation(rotationMatrixAdjusted, orientationValues);
+
             float azimuth = orientationValues[0] ;
             float pitch = orientationValues[1] ;
             float roll = orientationValues[2] ;
@@ -165,10 +202,11 @@ public class MainActivity extends AppCompatActivity
             } else {
                 mSpotRight.setAlpha(Math.abs(roll));
             }
-
+            // convert to degree
             azimuth=azimuth*180 / (float)Math.PI;
             pitch = pitch*180 / (float)Math.PI;
             roll=roll*180 / (float)Math.PI;
+            //
             mTextSensorAzimuth.setText(getResources().getString(R.string.value_format, azimuth));
             mTextSensorPitch.setText(getResources().getString(R.string.value_format, pitch));
             mTextSensorRoll.setText(getResources().getString(R.string.value_format, roll));
