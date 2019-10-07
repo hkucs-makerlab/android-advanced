@@ -25,8 +25,11 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Display;
+import android.view.MotionEvent;
 import android.view.Surface;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -34,7 +37,7 @@ import android.widget.TextView;
     https://codelabs.developers.google.com/codelabs/advanced-android-training-sensor-orientation/
  */
 public class MainActivity extends AppCompatActivity
-        implements SensorEventListener {
+        implements SensorEventListener, View.OnTouchListener{
 
     // System sensor manager instance.
     private SensorManager mSensorManager;
@@ -63,7 +66,8 @@ public class MainActivity extends AppCompatActivity
     private ImageView mSpotRight;
     //
     private Display mDisplay;
-
+    //
+    private boolean mMotionEnable=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +95,9 @@ public class MainActivity extends AppCompatActivity
                 Sensor.TYPE_ACCELEROMETER);
         mSensorMagnetometer = mSensorManager.getDefaultSensor(
                 Sensor.TYPE_MAGNETIC_FIELD);
+        //
+        Button button=findViewById(R.id.buttonStart);
+        button.setOnTouchListener(this);
     }
 
     /**
@@ -129,6 +136,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         int sensorType = sensorEvent.sensor.getType();
+
+        if (!mMotionEnable)return;
+
         switch (sensorType) {
             case Sensor.TYPE_ACCELEROMETER:
                 mAccelerometerData = sensorEvent.values.clone();
@@ -219,5 +229,19 @@ public class MainActivity extends AppCompatActivity
      */
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
+    }
+
+
+    @Override
+    public boolean onTouch(View view, MotionEvent event) {
+        Button button = (Button) view;
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            button.setPressed(true);
+            mMotionEnable=true;
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            button.setPressed(false);
+            mMotionEnable=false;
+        }
+        return false;
     }
 }
